@@ -1,5 +1,11 @@
 import {Component, OnInit} from '@angular/core';
 import {FormGroup, FormBuilder, Validators, AbstractControl, FormArray, FormControl} from '@angular/forms';
+import {ActivatedRoute} from '@angular/router';
+import {EmployeeService} from './employee.service';
+import {IEmployee} from './IEmployee';
+import {ISkill} from './ISkill';
+import {forEach} from '@angular/router/src/utils/collection';
+import {fromArray} from 'rxjs/internal/observable/fromArray';
 
 @Component({
   selector: 'app-create-employee',
@@ -8,16 +14,7 @@ import {FormGroup, FormBuilder, Validators, AbstractControl, FormArray, FormCont
 })
 export class CreateEmployeeComponent implements OnInit {
 
-  formErrors = {
-    fullName: '',
-    email: '',
-    confirmEmail: '',
-    emailGroup: '',
-    phone: '',
-    skillName: '',
-    experienceInYears: '',
-    proficiency: ''
-  };
+  formErrors = {};
 
   employeeForm: FormGroup;
 
@@ -39,19 +36,10 @@ export class CreateEmployeeComponent implements OnInit {
     },
     phone: {
       required: 'Phone is required.'
-    },
-    skillName: {
-      required: 'Skill Name is required.',
-    },
-    experienceInYears: {
-      required: 'Experience is required.',
-    },
-    proficiency: {
-      required: 'Proficiency is required.',
-    },
+    }
   };
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private _route: ActivatedRoute, private _employeeService: EmployeeService) {
   }
 
   ngOnInit() {
@@ -75,10 +63,57 @@ export class CreateEmployeeComponent implements OnInit {
     this.employeeForm.valueChanges.subscribe(value => {
       this.logValidationErrors(this.employeeForm);
     });
+
+    this._route.paramMap.subscribe(params => {
+      const empId = params.get('id') as number;
+      if (empId) {
+        this.getEmployee(empId);
+      }
+    });
+  }
+
+  getEmployee(id: number) {
+    this._employeeService.getEmployee(id).subscribe(
+      (employee: IEmployee) => this.editEmployee(employee),
+      (err) => console.log(err)
+    );
+  }
+
+  editEmployee(employee: IEmployee) {
+    this.employeeForm.patchValue({
+      fullName: employee.fullName,
+      contactPreference: employee.contactPreference,
+      emailGroup: {
+        email: employee.email,
+        confirmEmail: employee.email,
+      },
+      phone: employee.phone
+    });
+
+    this.employeeForm.setControl('skills', this.setExistingSkills(employee.skills));
+  }
+
+  setExistingSkills(skillSets: ISkill[]): FormArray {
+    const formArray = new FormArray([]);
+    skillSets.forEach(s => {
+      formArray.push(this.fb.group({
+        skillName: s.skillName,
+        experienceInYears: s.experienceInYears,
+        proficiency: s.proficiency,
+      }));
+    });
+    return formArray;
   }
 
   addSkillButtonClick(): void {
     (this.employeeForm.get('skills') as FormArray).push(this.addSkillFormGroup());
+  }
+
+  removeSkillButtonClick(skillGroupIndex: number): void {
+    const skillsFormArray = (this.employeeForm.get('skills') as FormArray);
+    skillsFormArray.removeAt(skillGroupIndex);
+    skillsFormArray.markAsDirty();
+    skillsFormArray.markAsTouched();
   }
 
   addSkillFormGroup(): FormGroup {
@@ -123,7 +158,7 @@ export class CreateEmployeeComponent implements OnInit {
       this.formErrors[key] = '';
 
 
-      if (abstractControl && !abstractControl.valid && (abstractControl.touched || abstractControl.dirty)) {
+      if (abstractControl && !abstractControl.valid && (abstractControl.touched || abstractControl.dirty || abstractControl.value !== '')) {
         const messages = this.validationMessages[key];
         // console.log(messages);
         for (const errorKey in abstractControl.errors) {
@@ -136,14 +171,6 @@ export class CreateEmployeeComponent implements OnInit {
 
       if (abstractControl instanceof FormGroup) {
         this.logValidationErrors(abstractControl);
-      }
-
-      if (abstractControl instanceof FormArray) {
-        for (const control of abstractControl.controls) {
-          if (control instanceof FormGroup) {
-            this.logValidationErrors(control);
-          }
-        }
       }
     });
   }
@@ -160,7 +187,7 @@ function matchEmail(group: AbstractControl): { [key: string]: any } | null {
   const emailControl = group.get('email');
   const confirmEmailControl = group.get('confirmEmail');
 
-  if (emailControl.value === confirmEmailControl.value || confirmEmailControl.pristine) {
+  if (emailControl.value === confirmEmailControl.value || (confirmEmailControl.pristine && confirmEmailControl.value === '')) {
     return null;
   } else {
     return {emailMisMatch: true};
