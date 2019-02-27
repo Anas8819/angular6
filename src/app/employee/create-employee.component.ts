@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {FormGroup, FormBuilder, Validators, AbstractControl, FormArray, FormControl} from '@angular/forms';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {EmployeeService} from './employee.service';
 import {IEmployee} from './IEmployee';
 import {ISkill} from './ISkill';
@@ -15,7 +15,7 @@ import {fromArray} from 'rxjs/internal/observable/fromArray';
 export class CreateEmployeeComponent implements OnInit {
 
   formErrors = {};
-
+  employee: IEmployee;
   employeeForm: FormGroup;
 
   validationMessages = {
@@ -39,7 +39,7 @@ export class CreateEmployeeComponent implements OnInit {
     }
   };
 
-  constructor(private fb: FormBuilder, private _route: ActivatedRoute, private _employeeService: EmployeeService) {
+  constructor(private fb: FormBuilder, private _route: ActivatedRoute, private _employeeService: EmployeeService, private _router: Router) {
   }
 
   ngOnInit() {
@@ -65,7 +65,7 @@ export class CreateEmployeeComponent implements OnInit {
     });
 
     this._route.paramMap.subscribe(params => {
-      const empId = params.get('id') as number;
+      const empId = +params.get('id');
       if (empId) {
         this.getEmployee(empId);
       }
@@ -74,7 +74,10 @@ export class CreateEmployeeComponent implements OnInit {
 
   getEmployee(id: number) {
     this._employeeService.getEmployee(id).subscribe(
-      (employee: IEmployee) => this.editEmployee(employee),
+      (employee: IEmployee) => {
+        this.editEmployee(employee);
+        this.employee = employee;
+      },
       (err) => console.log(err)
     );
   }
@@ -177,7 +180,19 @@ export class CreateEmployeeComponent implements OnInit {
 
 
   onSubmit(): void {
-    console.log(this.employeeForm);
+    this.mapFormValuesToEmployeeModel();
+    this._employeeService.updateEmployee(this.employee).subscribe(
+      () => this._router.navigate(['list']),
+      (err: any) => console.log(err)
+    );
+  }
+
+  mapFormValuesToEmployeeModel() {
+    this.employee.fullName = this.employeeForm.value.fullName;
+    this.employee.contactPreference = this.employeeForm.value.contactPreference;
+    this.employee.email = this.employeeForm.value.email;
+    this.employee.phone = this.employeeForm.value.phone;
+    this.employee.skills = this.employeeForm.value.skills;
   }
 
 }
