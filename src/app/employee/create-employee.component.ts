@@ -14,6 +14,7 @@ import {fromArray} from 'rxjs/internal/observable/fromArray';
 })
 export class CreateEmployeeComponent implements OnInit {
 
+  pageTitle: string;
   formErrors = {};
   employee: IEmployee;
   employeeForm: FormGroup;
@@ -68,6 +69,17 @@ export class CreateEmployeeComponent implements OnInit {
       const empId = +params.get('id');
       if (empId) {
         this.getEmployee(empId);
+        this.pageTitle = 'Edit Employee';
+      } else {
+        this.pageTitle = 'Create Employee';
+        this.employee = {
+          id: null,
+          fullName: '',
+          contactPreference: '',
+          email: '',
+          phone: null,
+          skills: []
+        };
       }
     });
   }
@@ -181,16 +193,23 @@ export class CreateEmployeeComponent implements OnInit {
 
   onSubmit(): void {
     this.mapFormValuesToEmployeeModel();
-    this._employeeService.updateEmployee(this.employee).subscribe(
-      () => this._router.navigate(['list']),
-      (err: any) => console.log(err)
-    );
+    if (this.employee.id) {
+      this._employeeService.updateEmployee(this.employee).subscribe(
+        () => this._router.navigate(['list']),
+        (err: any) => console.log(err)
+      );
+    } else {
+      this._employeeService.addEmployee(this.employee).subscribe(
+        () => this._router.navigate(['list']),
+        (err: any) => console.log(err)
+      );
+    }
   }
 
   mapFormValuesToEmployeeModel() {
     this.employee.fullName = this.employeeForm.value.fullName;
     this.employee.contactPreference = this.employeeForm.value.contactPreference;
-    this.employee.email = this.employeeForm.value.email;
+    this.employee.email = this.employeeForm.value.emailGroup.confirmEmail;
     this.employee.phone = this.employeeForm.value.phone;
     this.employee.skills = this.employeeForm.value.skills;
   }

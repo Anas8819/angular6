@@ -2,9 +2,8 @@
   "employees": [
     {
       "id": 1,
-      "fullName": "Mark",
+      "fullName": "Mark5",
       "contactPreference": "email",
-      "email": "mark@email.com",
       "phone": "5641238971",
       "skills": [
         {
@@ -17,7 +16,8 @@
           "experienceInYears": 2,
           "proficiency": "intermediate"
         }
-      ]
+      ],
+      "email": "Nauman.Shafique@whetstonez.com"
     },
     {
       "id": 2,
@@ -42,6 +42,20 @@
           "proficiency": "advanced"
         }
       ]
+    },
+    {
+      "id": 3,
+      "fullName": "asd",
+      "contactPreference": "email",
+      "phone": "5641238971",
+      "skills": [
+        {
+          "skillName": "s",
+          "experienceInYears": "d",
+          "proficiency": "beginner"
+        }
+      ],
+      "email": "asddfaf@gmail.com"
     }
   ]
 }
